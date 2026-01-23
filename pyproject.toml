@@ -32,3 +32,6 @@ namespaces = false
 
 [tool.ruff]
 line-length = 90
+
+[tool.ruff.lint]
+ignore = ["F401"]
