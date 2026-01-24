@@ -8,8 +8,10 @@ from numpy.typing import NDArray
 
 
 TargetDtype = np.float64
+CheckDtype = np.bool
 type Matrix = Sequence[Real] | Sequence[Sequence[Real]] | np.ndarray
 type NPMatrix = NDArray[TargetDtype]
+type NPBoolMatrix = NDArray[CheckDtype]
 
 
 def check_matrix(
@@ -27,3 +29,7 @@ def check_matrix(
     n = matrix.size // m if n is None else n
     matrix.resize((m, n))
     return matrix
+
+
+def is_zero(A: NPMatrix) -> NPBoolMatrix:
+    return np.abs(A) < 1e-10

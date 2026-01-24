@@ -1,7 +1,8 @@
 """Matrix decompositons."""
 
 import numpy as np
-from mylinalg.utils import TargetDtype, NPMatrix, Matrix, check_matrix
+from mylinalg.utils import TargetDtype, NPMatrix, Matrix
+from mylinalg.utils import check_matrix, is_zero
 from typing import Literal
 
 
@@ -28,76 +29,103 @@ def _get_exchange(n: int, i: int, j: int) -> NPMatrix:
 #     return comb
 
 
-def _rr_column(rr: NPMatrix, i: int):
+def _rr_spine(rr: NPMatrix, i: int, j: int):
     rr_step = np.identity(rr.shape[0], dtype=rr.dtype)
     with np.errstate(divide="raise", invalid="raise", over="raise"):
-        rr_step[i + 1 :, i] = -1 * rr[i + 1 :, i] / rr[i, i]
+        rr_step[i + 1 :, i] = -1 * rr[i + 1 :, j] / rr[i, j]
     return rr_step
 
 
-def _rr_none(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
+def _ref_none(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
     m, n = A.shape
     acc_steps = np.identity(m, dtype=A.dtype)
-    rr = A.copy()
-    for i in range(min(m, n)):
-        rr_step = _rr_column(rr, i)
-        rr_step.dot(rr, out=rr)
-        rr_step.dot(acc_steps, out=acc_steps)
-    return acc_steps, rr
+    ref = A.copy()
+    j = 0
+    for i in range(m):
+        while j < n:
+            if is_zero(ref[i:, j]).all():
+                j += 1
+                continue
+            rr_step = _rr_spine(ref, i, j)
+            rr_step.dot(ref, out=ref)
+            rr_step.dot(acc_steps, out=acc_steps)
+            j += 1
+            break
+        else:
+            break
+    return acc_steps, ref
 
 
-def _rr_partial(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
+def _ref_partial(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
     m, n = A.shape
     acc_steps = np.identity(m, dtype=A.dtype)
-    rr = A.copy()
-    for i in range(min(m, n)):
-        best_row = np.argmax(rr[i:, i]) + i
-        if best_row != i:
-            exchange = _get_exchange(m, i, best_row)
-            exchange.dot(acc_steps, out=acc_steps)
-            exchange.dot(rr, out=rr)
-        rr_step = _rr_column(rr, i)
-        rr_step.dot(rr, out=rr)
-        rr_step.dot(acc_steps, out=acc_steps)
-    return acc_steps, rr
+    ref = A.copy()
+    j = 0
+    for i in range(m):
+        while j < n:
+            if is_zero(ref[i:, j]).all():
+                j += 1
+                continue
+            best_row = np.argmax(np.abs(ref[i:, j])) + i
+            if best_row != i:
+                exchange = _get_exchange(m, i, best_row)
+                exchange.dot(acc_steps, out=acc_steps)
+                exchange.dot(ref, out=ref)
+            rr_step = _rr_spine(ref, i, j)
+            rr_step.dot(ref, out=ref)
+            rr_step.dot(acc_steps, out=acc_steps)
+            j += 1
+            break
+        else:
+            break
+    return acc_steps, ref
 
 
-def _rr_complete(A: NPMatrix) -> tuple[NPMatrix, NPMatrix, NPMatrix]:
+def _ref_complete(A: NPMatrix) -> tuple[NPMatrix, NPMatrix, NPMatrix]:
     m, n = A.shape
     acc_lft_steps = np.identity(m, dtype=A.dtype)
     acc_rgt_steps = np.identity(n, dtype=A.dtype)
-    rr = A.copy()
-    for i in range(min(m, n)):
-        best_r, best_c = np.unravel_index(
-            np.argmax(np.abs(A[i:, i:])), shape=(m - i, n - i)
-        )
-        best_r += i
-        best_c += i
-        if best_r != i:
-            exchange = _get_exchange(m, i, best_r)
-            exchange.dot(acc_lft_steps, out=acc_lft_steps)
-            exchange.dot(rr, out=rr)
-        if best_c != i:
-            exchange = _get_exchange(n, i, best_c)
-            acc_rgt_steps.dot(exchange, out=acc_rgt_steps)
-            rr.dot(exchange, out=rr)
-        rr_step = _rr_column(rr, i)
-        rr_step.dot(rr, out=rr)
-        rr_step.dot(acc_lft_steps, out=acc_lft_steps)
-    return acc_lft_steps, rr, acc_rgt_steps
+    ref = A.copy()
+    j = 0
+    for i in range(m):
+        while j < n:
+            if is_zero(ref[i:, j]).all():
+                j += 1
+                continue
+            best_r, best_c = np.unravel_index(
+                np.argmax(np.abs(ref[i:, j:])), shape=(m - i, n - j)
+            )
+            best_r += i
+            best_c += j
+            if best_r != i:
+                exchange = _get_exchange(m, i, best_r)
+                exchange.dot(acc_lft_steps, out=acc_lft_steps)
+                exchange.dot(ref, out=ref)
+            if best_c != j:
+                exchange = _get_exchange(n, j, best_c)
+                acc_rgt_steps.dot(exchange, out=acc_rgt_steps)
+                ref.dot(exchange, out=ref)
+            rr_step = _rr_spine(ref, i, j)
+            rr_step.dot(ref, out=ref)
+            rr_step.dot(acc_lft_steps, out=acc_lft_steps)
+            j += 1
+            break
+        else:
+            break
+    return acc_lft_steps, ref, acc_rgt_steps
 
 
-def rr(
+def ref(
     A: Matrix,
     pivoting: Pivoting = "partial",
 ) -> tuple[NPMatrix, NPMatrix] | tuple[NPMatrix, NPMatrix, NPMatrix]:
     A = check_matrix(A)
     if pivoting == "none":
-        res = _rr_none(A)
+        res = _ref_none(A)
     elif pivoting == "partial":
-        res = _rr_partial(A)
+        res = _ref_partial(A)
     else:
-        res = _rr_complete(A)
+        res = _ref_complete(A)
     return res
 
 
