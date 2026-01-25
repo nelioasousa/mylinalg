@@ -3,7 +3,7 @@
 import numpy as np
 from mylinalg.utils import TargetDtype, NPMatrix, Matrix
 from mylinalg.utils import check_matrix, is_zero
-from typing import Literal
+from typing import Literal, Optional
 
 
 type Pivoting = Literal["none", "partial", "complete"]
@@ -36,10 +36,11 @@ def _rr_spine(rr: NPMatrix, i: int, j: int):
     return rr_step
 
 
-def _ref_none(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
+def _ref_none(A: NPMatrix) -> tuple[None, None, NPMatrix, NPMatrix]:
     m, n = A.shape
-    acc_steps = np.identity(m, dtype=A.dtype)
-    ref = A.copy()
+    # Compute also the LU decomposition
+    L = np.identity(m, dtype=A.dtype)
+    ref = A.copy()  # `ref` equal the U matrix in the LU decomposition
     j = 0
     for i in range(m):
         while j < n:
@@ -48,18 +49,22 @@ def _ref_none(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
                 continue
             rr_step = _rr_spine(ref, i, j)
             rr_step.dot(ref, out=ref)
-            rr_step.dot(acc_steps, out=acc_steps)
+            rr_step[i + 1 :, i] = -1 * rr_step[i + 1 :, i]
+            L.dot(rr_step, out=L)
             j += 1
             break
         else:
             break
-    return acc_steps, ref
+    # LU = A
+    return L, ref, None, None
 
 
-def _ref_partial(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
+def _ref_partial(A: NPMatrix) -> tuple[None, NPMatrix, NPMatrix, NPMatrix]:
     m, n = A.shape
-    acc_steps = np.identity(m, dtype=A.dtype)
-    ref = A.copy()
+    # Compute also the LU decomposition
+    L = np.identity(m, dtype=A.dtype)
+    P = np.identity(m, dtype=A.dtype)
+    ref = A.copy()  # `ref` equal the U matrix in the LU decomposition
     j = 0
     for i in range(m):
         while j < n:
@@ -68,24 +73,30 @@ def _ref_partial(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
                 continue
             best_row = np.argmax(np.abs(ref[i:, j])) + i
             if best_row != i:
-                exchange = _get_exchange(m, i, best_row)
-                exchange.dot(acc_steps, out=acc_steps)
-                exchange.dot(ref, out=ref)
+                P_i = _get_exchange(m, i, best_row)
+                P_i.dot(P, out=P)
+                P_i.dot(ref, out=ref)
+                P_i.dot(L, out=L)
+                L.dot(P_i, out=L)
             rr_step = _rr_spine(ref, i, j)
             rr_step.dot(ref, out=ref)
-            rr_step.dot(acc_steps, out=acc_steps)
+            rr_step[i + 1 :, i] = -1 * rr_step[i + 1 :, i]
+            L.dot(rr_step, out=L)
             j += 1
             break
         else:
             break
-    return acc_steps, ref
+    # LU = PA
+    return L, ref, P, None
 
 
-def _ref_complete(A: NPMatrix) -> tuple[NPMatrix, NPMatrix, NPMatrix]:
+def _ref_complete(A: NPMatrix) -> tuple[NPMatrix, NPMatrix, NPMatrix, NPMatrix]:
     m, n = A.shape
-    acc_lft_steps = np.identity(m, dtype=A.dtype)
-    acc_rgt_steps = np.identity(n, dtype=A.dtype)
-    ref = A.copy()
+    # Compute also the LU decomposition
+    L = np.identity(m, dtype=A.dtype)
+    P = np.identity(m, dtype=A.dtype)
+    Q = np.identity(n, dtype=A.dtype)
+    ref = A.copy()  # `ref` equal the U matrix in the LU decomposition
     j = 0
     for i in range(m):
         while j < n:
@@ -98,27 +109,32 @@ def _ref_complete(A: NPMatrix) -> tuple[NPMatrix, NPMatrix, NPMatrix]:
             best_r += i
             best_c += j
             if best_r != i:
-                exchange = _get_exchange(m, i, best_r)
-                exchange.dot(acc_lft_steps, out=acc_lft_steps)
-                exchange.dot(ref, out=ref)
+                P_i = _get_exchange(m, i, best_r)
+                P_i.dot(P, out=P)
+                P_i.dot(ref, out=ref)
+                P_i.dot(L, out=L)
+                L.dot(P_i, out=L)
             if best_c != j:
-                exchange = _get_exchange(n, j, best_c)
-                acc_rgt_steps.dot(exchange, out=acc_rgt_steps)
-                ref.dot(exchange, out=ref)
+                C_j = _get_exchange(n, j, best_c)
+                Q.dot(C_j, out=Q)
+                ref.dot(C_j, out=ref)
             rr_step = _rr_spine(ref, i, j)
             rr_step.dot(ref, out=ref)
-            rr_step.dot(acc_lft_steps, out=acc_lft_steps)
+            rr_step[i + 1 :, i] = -1 * rr_step[i + 1 :, i]
+            L.dot(rr_step, out=L)
             j += 1
             break
         else:
             break
-    return acc_lft_steps, ref, acc_rgt_steps
+    # LU = PAQ
+    return L, ref, P, Q
 
 
 def ref(
     A: Matrix,
     pivoting: Pivoting = "partial",
-) -> tuple[NPMatrix, NPMatrix] | tuple[NPMatrix, NPMatrix, NPMatrix]:
+    return_LU_decomposition: bool = False,
+) -> NPMatrix | tuple[NPMatrix, NPMatrix, Optional[NPMatrix], Optional[NPMatrix]]:
     A = check_matrix(A)
     if pivoting == "none":
         res = _ref_none(A)
@@ -126,7 +142,9 @@ def ref(
         res = _ref_partial(A)
     else:
         res = _ref_complete(A)
-    return res
+    if return_LU_decomposition:
+        return res
+    return res[1]
 
 
 def rref(
@@ -142,7 +160,8 @@ def _lu_doolittle(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
     U = np.zeros((m, n), dtype=A.dtype)
     for i in range(m):
         U[[i], i:] = A[[i], i:] - L[[i], :i].dot(U[:i, i:])
-        L[i + 1 :, [i]] = (A[i + 1 :, [i]] - L[i + 1 :, :i].dot(U[:i, [i]])) / U[i, i]
+        with np.errstate(divide="raise", invalid="raise", over="raise"):
+            L[i + 1 :, [i]] = (A[i + 1 :, [i]] - L[i + 1 :, :i].dot(U[:i, [i]])) / U[i, i]
     return L, U
 
 
@@ -153,7 +172,7 @@ def lu(
     A = check_matrix(A)
     if pivoting == "none":
         return _lu_doolittle(A)
-    return
+    return ref(A, pivoting=pivoting, return_LU_decomposition=True)
 
 
 def cholesky(A: Matrix) -> tuple[NPMatrix, NPMatrix]:
