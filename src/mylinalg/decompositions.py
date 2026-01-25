@@ -136,10 +136,23 @@ def rref(
     return
 
 
+def _lu_doolittle(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
+    m, n = A.shape
+    L = np.identity(m, dtype=A.dtype)
+    U = np.zeros((m, n), dtype=A.dtype)
+    for i in range(m):
+        U[[i], i:] = A[[i], i:] - L[[i], :i].dot(U[:i, i:])
+        L[i + 1 :, [i]] = (A[i + 1 :, [i]] - L[i + 1 :, :i].dot(U[:i, [i]])) / U[i, i]
+    return L, U
+
+
 def lu(
     A: Matrix,
     pivoting: Pivoting = "none",
 ) -> tuple[NPMatrix, NPMatrix]:
+    A = check_matrix(A)
+    if pivoting == "none":
+        return _lu_doolittle(A)
     return
 
 
