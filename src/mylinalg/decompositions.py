@@ -168,10 +168,11 @@ def _lu_doolittle(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
 def lu(
     A: Matrix,
     pivoting: Pivoting = "none",
-) -> tuple[NPMatrix, NPMatrix]:
+) -> tuple[NPMatrix, NPMatrix, Optional[NPMatrix], Optional[NPMatrix]]:
     A = check_matrix(A)
     if pivoting == "none":
-        return _lu_doolittle(A)
+        L, U = _lu_doolittle(A)
+        return L, U, None, None
     return ref(A, pivoting=pivoting, return_LU_decomposition=True)
 
 
