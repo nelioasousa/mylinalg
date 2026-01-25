@@ -36,18 +36,22 @@ def _rr_spine(rr: NPMatrix, i: int, j: int):
     return rr_step
 
 
-def _ref_none(A: NPMatrix) -> tuple[None, None, NPMatrix, NPMatrix]:
+def _ref_none(
+    A: NPMatrix,
+) -> tuple[NPMatrix, NPMatrix, None, None, list[tuple[int, int]]]:
     m, n = A.shape
     # Compute also the LU decomposition
     L = np.identity(m, dtype=A.dtype)
     ref = A.copy()  # `ref` equal the U matrix in the LU decomposition
     j = 0
+    pivots = []
     for i in range(m):
         while j < n:
             if is_zero(ref[i:, j]).all():
                 j += 1
                 continue
             rr_step = _rr_spine(ref, i, j)
+            pivots.append((i, j))
             rr_step.dot(ref, out=ref)
             rr_step[i + 1 :, i] = -1 * rr_step[i + 1 :, i]
             L.dot(rr_step, out=L)
@@ -56,16 +60,19 @@ def _ref_none(A: NPMatrix) -> tuple[None, None, NPMatrix, NPMatrix]:
         else:
             break
     # LU = A
-    return L, ref, None, None
+    return L, ref, None, None, pivots
 
 
-def _ref_partial(A: NPMatrix) -> tuple[None, NPMatrix, NPMatrix, NPMatrix]:
+def _ref_partial(
+    A: NPMatrix,
+) -> tuple[NPMatrix, NPMatrix, NPMatrix, None, list[tuple[int, int]]]:
     m, n = A.shape
     # Compute also the LU decomposition
     L = np.identity(m, dtype=A.dtype)
     P = np.identity(m, dtype=A.dtype)
     ref = A.copy()  # `ref` equal the U matrix in the LU decomposition
     j = 0
+    pivots = []
     for i in range(m):
         while j < n:
             if is_zero(ref[i:, j]).all():
@@ -79,6 +86,7 @@ def _ref_partial(A: NPMatrix) -> tuple[None, NPMatrix, NPMatrix, NPMatrix]:
                 P_i.dot(L, out=L)
                 L.dot(P_i, out=L)
             rr_step = _rr_spine(ref, i, j)
+            pivots.append((i, j))
             rr_step.dot(ref, out=ref)
             rr_step[i + 1 :, i] = -1 * rr_step[i + 1 :, i]
             L.dot(rr_step, out=L)
@@ -87,10 +95,12 @@ def _ref_partial(A: NPMatrix) -> tuple[None, NPMatrix, NPMatrix, NPMatrix]:
         else:
             break
     # LU = PA
-    return L, ref, P, None
+    return L, ref, P, None, pivots
 
 
-def _ref_complete(A: NPMatrix) -> tuple[NPMatrix, NPMatrix, NPMatrix, NPMatrix]:
+def _ref_complete(
+    A: NPMatrix,
+) -> tuple[NPMatrix, NPMatrix, NPMatrix, NPMatrix, list[tuple[int, int]]]:
     m, n = A.shape
     # Compute also the LU decomposition
     L = np.identity(m, dtype=A.dtype)
@@ -98,6 +108,7 @@ def _ref_complete(A: NPMatrix) -> tuple[NPMatrix, NPMatrix, NPMatrix, NPMatrix]:
     Q = np.identity(n, dtype=A.dtype)
     ref = A.copy()  # `ref` equal the U matrix in the LU decomposition
     j = 0
+    pivots = []
     for i in range(m):
         while j < n:
             if is_zero(ref[i:, j]).all():
@@ -119,6 +130,7 @@ def _ref_complete(A: NPMatrix) -> tuple[NPMatrix, NPMatrix, NPMatrix, NPMatrix]:
                 Q.dot(C_j, out=Q)
                 ref.dot(C_j, out=ref)
             rr_step = _rr_spine(ref, i, j)
+            pivots.append((i, j))
             rr_step.dot(ref, out=ref)
             rr_step[i + 1 :, i] = -1 * rr_step[i + 1 :, i]
             L.dot(rr_step, out=L)
@@ -127,24 +139,29 @@ def _ref_complete(A: NPMatrix) -> tuple[NPMatrix, NPMatrix, NPMatrix, NPMatrix]:
         else:
             break
     # LU = PAQ
-    return L, ref, P, Q
+    return L, ref, P, Q, pivots
 
 
 def ref(
     A: Matrix,
     pivoting: Pivoting = "partial",
-    return_LU_decomposition: bool = False,
-) -> NPMatrix | tuple[NPMatrix, NPMatrix, Optional[NPMatrix], Optional[NPMatrix]]:
+    return_all: bool = False,
+) -> (
+    NPMatrix
+    | tuple[
+        NPMatrix, NPMatrix, Optional[NPMatrix], Optional[NPMatrix], list[tuple[int, int]]
+    ]
+):
     A = check_matrix(A)
     if pivoting == "none":
-        res = _ref_none(A)
+        result = _ref_none(A)
     elif pivoting == "partial":
-        res = _ref_partial(A)
+        result = _ref_partial(A)
     else:
-        res = _ref_complete(A)
-    if return_LU_decomposition:
-        return res
-    return res[1]
+        result = _ref_complete(A)
+    if return_all:
+        return result
+    return result[1]
 
 
 def rref(
@@ -173,7 +190,8 @@ def lu(
     if pivoting == "none":
         L, U = _lu_doolittle(A)
         return L, U, None, None
-    return ref(A, pivoting=pivoting, return_LU_decomposition=True)
+    L, U, P, Q, pivots = ref(A, pivoting=pivoting, return_LU=True)
+    return L, U, P, Q
 
 
 def cholesky(A: Matrix) -> tuple[NPMatrix, NPMatrix]:
