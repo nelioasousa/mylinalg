@@ -15,20 +15,6 @@ def _get_exchange(n: int, i: int, j: int) -> NPMatrix:
     return exchange
 
 
-# def _get_combination(
-#     m: int,
-#     n: int,
-#     i: int,
-#     j: int,
-#     i_coef: float,
-#     j_coef: float,
-#     target: int,
-# ) -> NPMatrix:
-#     comb = np.eye(m, n, k=0, dtype=TargetDtype)
-#     comb[target] = comb[i] * i_coef + comb[j] * j_coef
-#     return comb
-
-
 def _rr_spine(rr: NPMatrix, i: int, j: int):
     rr_step = np.identity(rr.shape[0], dtype=rr.dtype)
     with np.errstate(divide="raise", invalid="raise", over="raise"):
@@ -36,23 +22,22 @@ def _rr_spine(rr: NPMatrix, i: int, j: int):
     return rr_step
 
 
-def _ref_none(
+def _lu_gauss_none(
     A: NPMatrix,
 ) -> tuple[NPMatrix, NPMatrix, None, None, list[tuple[int, int]]]:
     m, n = A.shape
-    # Compute also the LU decomposition
     L = np.identity(m, dtype=A.dtype)
-    ref = A.copy()  # `ref` equal the U matrix in the LU decomposition
+    U = A.copy()
     j = 0
     pivots = []
     for i in range(m):
         while j < n:
-            if is_zero(ref[i:, j]).all():
+            if is_zero(U[i:, j]).all():
                 j += 1
                 continue
-            rr_step = _rr_spine(ref, i, j)
+            rr_step = _rr_spine(U, i, j)
             pivots.append((i, j))
-            rr_step.dot(ref, out=ref)
+            rr_step.dot(U, out=U)
             rr_step[i + 1 :, i] = -1 * rr_step[i + 1 :, i]
             L.dot(rr_step, out=L)
             j += 1
@@ -60,34 +45,33 @@ def _ref_none(
         else:
             break
     # LU = A
-    return L, ref, None, None, pivots
+    return L, U, None, None, pivots
 
 
-def _ref_partial(
+def _lu_gauss_partial(
     A: NPMatrix,
 ) -> tuple[NPMatrix, NPMatrix, NPMatrix, None, list[tuple[int, int]]]:
     m, n = A.shape
-    # Compute also the LU decomposition
     L = np.identity(m, dtype=A.dtype)
     P = np.identity(m, dtype=A.dtype)
-    ref = A.copy()  # `ref` equal the U matrix in the LU decomposition
+    U = A.copy()
     j = 0
     pivots = []
     for i in range(m):
         while j < n:
-            if is_zero(ref[i:, j]).all():
+            if is_zero(U[i:, j]).all():
                 j += 1
                 continue
-            best_row = np.argmax(np.abs(ref[i:, j])) + i
+            best_row = np.argmax(np.abs(U[i:, j])) + i
             if best_row != i:
                 P_i = _get_exchange(m, i, best_row)
                 P_i.dot(P, out=P)
-                P_i.dot(ref, out=ref)
+                P_i.dot(U, out=U)
                 P_i.dot(L, out=L)
                 L.dot(P_i, out=L)
-            rr_step = _rr_spine(ref, i, j)
+            rr_step = _rr_spine(U, i, j)
             pivots.append((i, j))
-            rr_step.dot(ref, out=ref)
+            rr_step.dot(U, out=U)
             rr_step[i + 1 :, i] = -1 * rr_step[i + 1 :, i]
             L.dot(rr_step, out=L)
             j += 1
@@ -95,43 +79,42 @@ def _ref_partial(
         else:
             break
     # LU = PA
-    return L, ref, P, None, pivots
+    return L, U, P, None, pivots
 
 
-def _ref_complete(
+def _lu_gauss_complete(
     A: NPMatrix,
 ) -> tuple[NPMatrix, NPMatrix, NPMatrix, NPMatrix, list[tuple[int, int]]]:
     m, n = A.shape
-    # Compute also the LU decomposition
     L = np.identity(m, dtype=A.dtype)
     P = np.identity(m, dtype=A.dtype)
     Q = np.identity(n, dtype=A.dtype)
-    ref = A.copy()  # `ref` equal the U matrix in the LU decomposition
+    U = A.copy()
     j = 0
     pivots = []
     for i in range(m):
         while j < n:
-            if is_zero(ref[i:, j]).all():
+            if is_zero(U[i:, j]).all():
                 j += 1
                 continue
             best_r, best_c = np.unravel_index(
-                np.argmax(np.abs(ref[i:, j:])), shape=(m - i, n - j)
+                np.argmax(np.abs(U[i:, j:])), shape=(m - i, n - j)
             )
             best_r += i
             best_c += j
             if best_r != i:
                 P_i = _get_exchange(m, i, best_r)
                 P_i.dot(P, out=P)
-                P_i.dot(ref, out=ref)
+                P_i.dot(U, out=U)
                 P_i.dot(L, out=L)
                 L.dot(P_i, out=L)
             if best_c != j:
                 C_j = _get_exchange(n, j, best_c)
                 Q.dot(C_j, out=Q)
-                ref.dot(C_j, out=ref)
-            rr_step = _rr_spine(ref, i, j)
+                U.dot(C_j, out=U)
+            rr_step = _rr_spine(U, i, j)
             pivots.append((i, j))
-            rr_step.dot(ref, out=ref)
+            rr_step.dot(U, out=U)
             rr_step[i + 1 :, i] = -1 * rr_step[i + 1 :, i]
             L.dot(rr_step, out=L)
             j += 1
@@ -139,29 +122,22 @@ def _ref_complete(
         else:
             break
     # LU = PAQ
-    return L, ref, P, Q, pivots
+    return L, U, P, Q, pivots
 
 
 def ref(
-    A: Matrix,
-    pivoting: Pivoting = "partial",
-    return_all: bool = False,
-) -> (
-    NPMatrix
-    | tuple[
-        NPMatrix, NPMatrix, Optional[NPMatrix], Optional[NPMatrix], list[tuple[int, int]]
-    ]
-):
+    A: Matrix, pivoting: Pivoting = "partial", return_pivots_loc: bool = False
+) -> NPMatrix | tuple[NPMatrix, list[tuple[int, int]]]:
     A = check_matrix(A)
     if pivoting == "none":
-        result = _ref_none(A)
+        lu_dec = _lu_gauss_none(A)
     elif pivoting == "partial":
-        result = _ref_partial(A)
+        lu_dec = _lu_gauss_partial(A)
     else:
-        result = _ref_complete(A)
-    if return_all:
-        return result
-    return result[1]
+        lu_dec = _lu_gauss_complete(A)
+    if return_pivots_loc:
+        return lu_dec[1], lu_dec[-1]
+    return lu_dec[1]
 
 
 def rref(
@@ -190,7 +166,10 @@ def lu(
     if pivoting == "none":
         L, U = _lu_doolittle(A)
         return L, U, None, None
-    L, U, P, Q, pivots = ref(A, pivoting=pivoting, return_LU=True)
+    if pivoting == "partial":
+        L, U, P, Q, _ = _lu_gauss_partial(A)
+    else:
+        L, U, P, Q, _ = _lu_gauss_complete(A)
     return L, U, P, Q
 
 
