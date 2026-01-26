@@ -190,5 +190,13 @@ def lu(
     return L, U, P, Q
 
 
-def cholesky(A: Matrix) -> tuple[NPMatrix, NPMatrix]:
-    return
+def cholesky(A: Matrix) -> NPMatrix:
+    A = check_matrix(A)
+    n = len(A)
+    L = np.zeros_like(A)
+    with np.errstate(divide="raise", invalid="raise", over="raise"):
+        for j in range(n):
+            L[j:, [j]] = A[j:, [j]] - L[j:, :j].dot(L[[j], :j].T)
+            L[j, j] = np.sqrt(L[j, j])
+            L[j + 1 :, j] /= L[j, j]
+    return L
