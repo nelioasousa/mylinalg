@@ -15,10 +15,13 @@ def _get_exchange(n: int, i: int, j: int) -> NPMatrix:
     return exchange
 
 
-def _rr_spine(rr: NPMatrix, i: int, j: int):
+def _rr_spine(rr: NPMatrix, i: int, j: int, invert: bool = False):
     rr_step = np.identity(rr.shape[0], dtype=rr.dtype)
     with np.errstate(divide="raise", invalid="raise", over="raise"):
-        rr_step[i + 1 :, i] = -1 * rr[i + 1 :, j] / rr[i, j]
+        if invert:
+            rr_step[:i, i] = -1 * rr[:i, j] / rr[i, j]
+        else:
+            rr_step[i + 1 :, i] = -1 * rr[i + 1 :, j] / rr[i, j]
     return rr_step
 
 
@@ -135,16 +138,30 @@ def ref(
         lu_dec = _lu_gauss_partial(A)
     else:
         lu_dec = _lu_gauss_complete(A)
+    _, ref, *_, pivots = lu_dec
     if return_pivots_loc:
-        return lu_dec[1], lu_dec[-1]
-    return lu_dec[1]
+        return ref, pivots
+    return ref
 
 
 def rref(
-    A: Matrix,
-    pivoting: Pivoting = "partial",
-) -> tuple[NPMatrix, NPMatrix] | tuple[NPMatrix, NPMatrix, NPMatrix]:
-    return
+    A: Matrix, pivoting: Pivoting = "partial", return_pivots_loc: bool = False
+) -> NPMatrix | tuple[NPMatrix, list[tuple[int, int]]]:
+    A = check_matrix(A)
+    if pivoting == "none":
+        lu_dec = _lu_gauss_none(A)
+    elif pivoting == "partial":
+        lu_dec = _lu_gauss_partial(A)
+    else:
+        lu_dec = _lu_gauss_complete(A)
+    _, rref, *_, pivots = lu_dec
+    for i, j in pivots:
+        rr_step = _rr_spine(rref, i, j, invert=True)
+        rr_step[i, i] = 1 / rref[i, j]
+        rr_step.dot(rref, out=rref)
+    if return_pivots_loc:
+        return rref, pivots
+    return rref
 
 
 def _lu_doolittle(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
