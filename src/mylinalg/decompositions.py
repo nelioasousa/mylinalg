@@ -35,13 +35,14 @@ def _qr_gram_schmidt(A: NPMatrix, independence_tol: float) -> tuple[NPMatrix, NP
     n = A.shape[1]
     Q = A.copy()
     R = np.zeros((n, n), dtype=A.dtype)
-    for j in range(n):
-        R[j, j] = np.linalg.norm(Q[:, j])
-        if R[j, j] >= independence_tol:
-            Q[:, j] /= R[j, j]
-        for i in range(j + 1, n):
-            R[j, i] = Q[:, j].dot(Q[:, i])
-            Q[:, i] -= R[j, i] * Q[:, j]
+    with np.errstate(divide="raise", invalid="raise", over="raise"):
+        for j in range(n):
+            R[j, j] = np.linalg.norm(Q[:, j])
+            if R[j, j] >= independence_tol:
+                Q[:, j] /= R[j, j]
+            for i in range(j + 1, n):
+                R[j, i] = Q[:, j].dot(Q[:, i])
+                Q[:, i] -= R[j, i] * Q[:, j]
     return Q, R
 
 
@@ -188,6 +189,12 @@ def lu(
     else:
         L, U, P, Q, _ = _lu_gauss_complete(A)
     return L, U, P, Q
+
+
+def qr(A: Matrix, independence_tol: Optional[float] = None) -> tuple[NPMatrix, NPMatrix]:
+    A = check_matrix(A)
+    independence_tol = ZERO_TOL if independence_tol is None else independence_tol
+    return _qr_gram_schmidt(A, independence_tol=independence_tol)
 
 
 def cholesky(A: Matrix) -> NPMatrix:
