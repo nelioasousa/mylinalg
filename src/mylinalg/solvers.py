@@ -10,7 +10,7 @@ def matrix_inverse(A: Matrix) -> NPMatrix:
     A = check_matrix(A)
     m, n = A.shape
     if m != n:
-        raise ValueError("Singular matrix")
+        raise ValueError("Non-square matrix")
     A_aug = np.concatenate((A, np.identity(m, dtype=A.dtype)), axis=1)
     rr, pivots = rref(A_aug, pivoting="partial", return_pivots_loc=True)
     if len(pivots) != m or pivots[-1] != (m, m):
