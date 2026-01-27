@@ -9,6 +9,19 @@ from typing import Literal, Optional
 type Pivoting = Literal["none", "partial", "complete"]
 
 
+def _qr_gram_schmidt(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
+    n = A.shape[1]
+    Q = A.copy()
+    R = np.zeros((n, n), dtype=A.dtype)
+    for j in range(n):
+        R[j, j] = np.linalg.norm(Q[:, j])
+        Q[:, j] /= R[j, j]
+        for i in range(j + 1, n):
+            R[j, i] = Q[:, j].dot(Q[:, i])
+            Q[:, i] -= R[j, i] * Q[:, j]
+    return Q, R
+
+
 def _get_exchange(n: int, i: int, j: int) -> NPMatrix:
     exchange = np.identity(n, dtype=TargetDtype)
     exchange[[i, j]] = exchange[[j, i]]
