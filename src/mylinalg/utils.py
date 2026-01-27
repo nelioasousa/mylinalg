@@ -7,6 +7,9 @@ import numpy as np
 from numpy.typing import NDArray
 
 
+ZERO_TOL = 1e-10
+
+
 TargetDtype = np.float64
 CheckDtype = np.bool
 type Matrix = Sequence[Real] | Sequence[Sequence[Real]] | np.ndarray
@@ -32,4 +35,4 @@ def check_matrix(
 
 
 def is_zero(A: NPMatrix) -> NPBoolMatrix:
-    return np.abs(A) < 1e-10
+    return np.abs(A) < ZERO_TOL

@@ -1,7 +1,8 @@
 """General matrix processing methods."""
 
+from typing import Optional
 import numpy as np
-from mylinalg.utils import NPMatrix, Matrix, check_matrix
+from mylinalg.utils import NPMatrix, Matrix, check_matrix, ZERO_TOL
 from mylinalg.decompositions import _qr_gram_schmidt
 from mylinalg.decompositions import _lu_gauss_none, _lu_gauss_partial, _lu_gauss_complete
 from mylinalg.decompositions import _rr_spine
@@ -44,9 +45,14 @@ def rref(
     return rref
 
 
-def gram_schmidt(A: Matrix) -> NPMatrix:
+def gram_schmidt(
+    A: Matrix, drop_columns: bool = False, independence_tol: Optional[float] = None
+) -> NPMatrix:
+    independence_tol = ZERO_TOL if independence_tol is None else independence_tol
     A = check_matrix(A)
-    Q, _ = _qr_gram_schmidt(A)
+    Q, R = _qr_gram_schmidt(A, independence_tol=independence_tol)
+    if drop_columns:
+        return Q[:, np.diagonal(R) >= independence_tol]
     return Q
 
 

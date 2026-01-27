@@ -9,13 +9,14 @@ from typing import Literal, Optional
 type Pivoting = Literal["none", "partial", "complete"]
 
 
-def _qr_gram_schmidt(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
+def _qr_gram_schmidt(A: NPMatrix, independence_tol: float) -> tuple[NPMatrix, NPMatrix]:
     n = A.shape[1]
     Q = A.copy()
     R = np.zeros((n, n), dtype=A.dtype)
     for j in range(n):
         R[j, j] = np.linalg.norm(Q[:, j])
-        Q[:, j] /= R[j, j]
+        if R[j, j] >= independence_tol:
+            Q[:, j] /= R[j, j]
         for i in range(j + 1, n):
             R[j, i] = Q[:, j].dot(Q[:, i])
             Q[:, i] -= R[j, i] * Q[:, j]
