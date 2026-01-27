@@ -3,6 +3,45 @@
 import numpy as np
 from mylinalg.utils import NPMatrix, Matrix, check_matrix
 from mylinalg.decompositions import _qr_gram_schmidt
+from mylinalg.decompositions import _lu_gauss_none, _lu_gauss_partial, _lu_gauss_complete
+from mylinalg.decompositions import _rr_spine
+from mylinalg.decompositions import Pivoting
+
+
+def ref(
+    A: Matrix, pivoting: Pivoting = "partial", return_pivots_loc: bool = False
+) -> NPMatrix | tuple[NPMatrix, list[tuple[int, int]]]:
+    A = check_matrix(A)
+    if pivoting == "none":
+        lu_dec = _lu_gauss_none(A)
+    elif pivoting == "partial":
+        lu_dec = _lu_gauss_partial(A)
+    else:
+        lu_dec = _lu_gauss_complete(A)
+    _, ref, *_, pivots = lu_dec
+    if return_pivots_loc:
+        return ref, pivots
+    return ref
+
+
+def rref(
+    A: Matrix, pivoting: Pivoting = "partial", return_pivots_loc: bool = False
+) -> NPMatrix | tuple[NPMatrix, list[tuple[int, int]]]:
+    A = check_matrix(A)
+    if pivoting == "none":
+        lu_dec = _lu_gauss_none(A)
+    elif pivoting == "partial":
+        lu_dec = _lu_gauss_partial(A)
+    else:
+        lu_dec = _lu_gauss_complete(A)
+    _, rref, *_, pivots = lu_dec
+    for i, j in pivots:
+        rr_step = _rr_spine(rref, i, j, invert=True)
+        rr_step[i, i] = 1 / rref[i, j]
+        rr_step.dot(rref, out=rref)
+    if return_pivots_loc:
+        return rref, pivots
+    return rref
 
 
 def gram_schmidt(A: Matrix) -> NPMatrix:
