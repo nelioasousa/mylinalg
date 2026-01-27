@@ -3,7 +3,7 @@
 from typing import Optional
 import numpy as np
 from mylinalg.utils import NPMatrix, Matrix, check_matrix, ZERO_TOL
-from mylinalg.decompositions import _qr_gram_schmidt
+from mylinalg.decompositions import _qr_gram_schmidt, rank_revealing_qr
 from mylinalg.decompositions import _lu_gauss_none, _lu_gauss_partial, _lu_gauss_complete
 from mylinalg.decompositions import _rr_spine
 from mylinalg.decompositions import Pivoting
@@ -48,13 +48,22 @@ def rref(
 def gram_schmidt(
     A: Matrix, drop_columns: bool = False, independence_tol: Optional[float] = None
 ) -> NPMatrix:
-    independence_tol = ZERO_TOL if independence_tol is None else independence_tol
     A = check_matrix(A)
+    independence_tol = ZERO_TOL if independence_tol is None else independence_tol
     Q, R = _qr_gram_schmidt(A, independence_tol=independence_tol)
     if drop_columns:
         return Q[:, np.diagonal(R) >= independence_tol]
     return Q
 
 
-def get_least_squares_projector(A: Matrix) -> Matrix:
-    return
+def column_space_projector(
+    A: Matrix, independence_tol: Optional[float] = None
+) -> NPMatrix:
+    independence_tol = ZERO_TOL if independence_tol is None else independence_tol
+    _, Q, R = rank_revealing_qr(A, independence_tol=independence_tol)
+    if R[0, 0] < independence_tol:
+        raise ValueError("All columns are collapsed onto the zero vector")
+    rank = np.argmax(np.diagonal(R) < independence_tol).item()
+    if not rank:
+        rank = len(R)
+    return Q[:, :rank].dot(Q[:, :rank].T)
