@@ -60,10 +60,7 @@ def column_space_projector(
     A: Matrix, independence_tol: Optional[float] = None
 ) -> NPMatrix:
     independence_tol = ZERO_TOL if independence_tol is None else independence_tol
-    _, Q, R = rank_revealing_qr(A, independence_tol=independence_tol)
-    if R[0, 0] < independence_tol:
+    _, Q, _ = rank_revealing_qr(A, independence_tol=independence_tol)
+    if not Q.size:
         raise ValueError("All columns are collapsed onto the zero vector")
-    rank = np.argmax(np.diagonal(R) < independence_tol).item()
-    if not rank:
-        rank = len(R)
-    return Q[:, :rank].dot(Q[:, :rank].T)
+    return Q.dot(Q.T)

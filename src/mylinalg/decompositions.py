@@ -22,9 +22,13 @@ def rank_revealing_qr(
         best_column = np.argmax(np.pow(Q[:, j:], 2).sum(axis=0)) + j
         P[[j, best_column]] = P[[best_column, j]]
         Q[:, [j, best_column]] = Q[:, [best_column, j]]
+        R[:, [j, best_column]] = R[:, [best_column, j]]
         R[j, j] = np.linalg.norm(Q[:, j])
-        if R[j, j] >= independence_tol:
-            Q[:, j] /= R[j, j]
+        if R[j, j] < independence_tol:
+            Q = Q[:, :j]
+            R = R[:j, :]
+            break
+        Q[:, j] /= R[j, j]
         for i in range(j + 1, n):
             R[j, i] = Q[:, j].dot(Q[:, i])
             Q[:, i] -= R[j, i] * Q[:, j]
