@@ -9,7 +9,9 @@ from typing import Literal, Optional
 type Pivoting = Literal["none", "partial", "complete"]
 
 
-def rank_revealing_qr(A: Matrix, independence_tol: Optional[float] = None):
+def rank_revealing_qr(
+    A: Matrix, independence_tol: Optional[float] = None
+) -> tuple[NPMatrix, NPMatrix, NPMatrix]:
     A = check_matrix(A)
     independence_tol = ZERO_TOL if independence_tol is None else independence_tol
     n = A.shape[1]
