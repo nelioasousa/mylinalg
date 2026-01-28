@@ -12,8 +12,8 @@ def matrix_inverse(A: Matrix) -> NPMatrix:
     if m != n:
         raise ValueError("Non-square matrix")
     A_aug = np.concatenate((A, np.identity(m, dtype=A.dtype)), axis=1)
-    rr, pivots = rref(A_aug, pivoting="partial", return_pivots_loc=True)
-    if len(pivots) != m or pivots[-1] != (m, m):
+    rr, pivots = rref(A_aug, pivoting="partial", return_pivots_loc=True, column_lim=n)
+    if len(pivots) != m:
         raise ValueError("Singular matrix")
     return rr[:, m:]
 

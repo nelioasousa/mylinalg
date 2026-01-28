@@ -68,14 +68,16 @@ def _rr_spine(rr: NPMatrix, i: int, j: int, invert: bool = False):
 
 def _lu_gauss_none(
     A: NPMatrix,
+    column_lim: Optional[int] = None,
 ) -> tuple[NPMatrix, NPMatrix, None, None, list[tuple[int, int]]]:
     m, n = A.shape
+    column_lim = n if column_lim is None else min(n, column_lim)
     L = np.identity(m, dtype=A.dtype)
     U = A.copy()
     j = 0
     pivots = []
     for i in range(m):
-        while j < n:
+        while j < column_lim:
             if is_zero(U[i:, j]).all():
                 j += 1
                 continue
@@ -94,15 +96,17 @@ def _lu_gauss_none(
 
 def _lu_gauss_partial(
     A: NPMatrix,
+    column_lim: Optional[int] = None,
 ) -> tuple[NPMatrix, NPMatrix, NPMatrix, None, list[tuple[int, int]]]:
     m, n = A.shape
+    column_lim = n if column_lim is None else min(n, column_lim)
     L = np.identity(m, dtype=A.dtype)
     P = np.identity(m, dtype=A.dtype)
     U = A.copy()
     j = 0
     pivots = []
     for i in range(m):
-        while j < n:
+        while j < column_lim:
             if is_zero(U[i:, j]).all():
                 j += 1
                 continue
@@ -128,8 +132,10 @@ def _lu_gauss_partial(
 
 def _lu_gauss_complete(
     A: NPMatrix,
+    column_lim: Optional[int] = None,
 ) -> tuple[NPMatrix, NPMatrix, NPMatrix, NPMatrix, list[tuple[int, int]]]:
     m, n = A.shape
+    column_lim = n if column_lim is None else min(n, column_lim)
     L = np.identity(m, dtype=A.dtype)
     P = np.identity(m, dtype=A.dtype)
     Q = np.identity(n, dtype=A.dtype)
@@ -137,12 +143,12 @@ def _lu_gauss_complete(
     j = 0
     pivots = []
     for i in range(m):
-        while j < n:
+        while j < column_lim:
             if is_zero(U[i:, j]).all():
                 j += 1
                 continue
             best_r, best_c = np.unravel_index(
-                np.argmax(np.abs(U[i:, j:])), shape=(m - i, n - j)
+                np.argmax(np.abs(U[i:, j:column_lim])), shape=(m - i, column_lim - j)
             )
             best_r += i
             best_c += j

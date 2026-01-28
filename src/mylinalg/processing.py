@@ -10,15 +10,18 @@ from mylinalg.decompositions import Pivoting
 
 
 def ref(
-    A: Matrix, pivoting: Pivoting = "partial", return_pivots_loc: bool = False
+    A: Matrix,
+    pivoting: Pivoting = "partial",
+    return_pivots_loc: bool = False,
+    column_lim: Optional[int] = None,
 ) -> NPMatrix | tuple[NPMatrix, list[tuple[int, int]]]:
     A = check_matrix(A)
     if pivoting == "none":
-        lu_dec = _lu_gauss_none(A)
+        lu_dec = _lu_gauss_none(A, column_lim=column_lim)
     elif pivoting == "partial":
-        lu_dec = _lu_gauss_partial(A)
+        lu_dec = _lu_gauss_partial(A, column_lim=column_lim)
     else:
-        lu_dec = _lu_gauss_complete(A)
+        lu_dec = _lu_gauss_complete(A, column_lim=column_lim)
     _, ref, *_, pivots = lu_dec
     if return_pivots_loc:
         return ref, pivots
@@ -26,15 +29,18 @@ def ref(
 
 
 def rref(
-    A: Matrix, pivoting: Pivoting = "partial", return_pivots_loc: bool = False
+    A: Matrix,
+    pivoting: Pivoting = "partial",
+    return_pivots_loc: bool = False,
+    column_lim: Optional[int] = None,
 ) -> NPMatrix | tuple[NPMatrix, list[tuple[int, int]]]:
     A = check_matrix(A)
     if pivoting == "none":
-        lu_dec = _lu_gauss_none(A)
+        lu_dec = _lu_gauss_none(A, column_lim=column_lim)
     elif pivoting == "partial":
-        lu_dec = _lu_gauss_partial(A)
+        lu_dec = _lu_gauss_partial(A, column_lim=column_lim)
     else:
-        lu_dec = _lu_gauss_complete(A)
+        lu_dec = _lu_gauss_complete(A, column_lim=column_lim)
     _, rref, *_, pivots = lu_dec
     for i, j in pivots:
         rr_step = _rr_spine(rref, i, j, invert=True)
