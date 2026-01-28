@@ -70,3 +70,17 @@ def column_space_projector(
     if not Q.size:
         raise ValueError("All columns are collapsed onto the zero vector")
     return Q.dot(Q.T)
+
+
+def householder_reflector(A: Matrix) -> NPMatrix:
+    A = check_matrix(A)
+    m, n = A.shape
+    if n != 1:
+        raise ValueError("`A` must be a column vector.")
+    norm = np.linalg.norm(A)
+    u = A.copy()
+    u[0, 0] += norm if A[0, 0] >= 0 else (-1 * norm)
+    u[:] /= np.linalg.norm(u)
+    H = np.identity(m, dtype=A.dtype)
+    H[:] -= 2 * u.dot(u.T)
+    return H
