@@ -21,7 +21,7 @@ def standard_power_iteration(
         A[:] -= shift * np.identity(m, dtype=A.dtype)
     max_iterations = max(1, max_iterations)
     convergence_tol = ZERO_TOL if convergence_tol is None else convergence_tol
-    v0 = np.ones((A.shape[0], 1), dtype=A.dtype)
+    v0 = np.ones((m, 1), dtype=A.dtype)
     v1 = np.empty_like(v0)
     lambda0 = 0.0
     for _ in range(max_iterations):

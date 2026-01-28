@@ -39,7 +39,7 @@ def rank_revealing_qr(
 ) -> tuple[NPMatrix, NPMatrix, NPMatrix]:
     A = check_matrix(A)
     independence_tol = ZERO_TOL if independence_tol is None else independence_tol
-    n = A.shape[1]
+    _, n = A.shape
     P = np.identity(n, dtype=A.dtype)
     Q = A.copy()
     R = np.zeros_like(P)
@@ -61,7 +61,7 @@ def rank_revealing_qr(
 
 
 def _qr_gram_schmidt(A: NPMatrix, independence_tol: float) -> tuple[NPMatrix, NPMatrix]:
-    n = A.shape[1]
+    _, n = A.shape
     Q = A.copy()
     R = np.zeros((n, n), dtype=A.dtype)
     for j in range(n):
