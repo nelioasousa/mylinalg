@@ -12,7 +12,7 @@ ZERO_TOL = 1e-10
 
 TargetDtype = np.float64
 CheckDtype = np.bool
-type Matrix = Sequence[Real] | Sequence[Sequence[Real]] | np.ndarray
+type Matrix = tuple[Sequence[Real], int, int] | Sequence[Sequence[Real]] | np.ndarray
 type NPMatrix = NDArray[TargetDtype]
 type NPBoolMatrix = NDArray[CheckDtype]
 
@@ -22,6 +22,8 @@ def check_matrix(
     m: Optional[int] = None,
     n: Optional[int] = None,
 ) -> NDArray:
+    if len(A) == 3 and isinstance(A[0], Sequence) and isinstance(A[1], int):
+        A, m, n = A
     matrix = np.asarray(A, dtype=TargetDtype)
     if m is None and n is None:
         if len(matrix.shape) < 2:
