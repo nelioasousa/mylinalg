@@ -104,8 +104,10 @@ def _lu_gauss_none(
             if is_zero(U[i:, j]).all():
                 j += 1
                 continue
-            rr_step = _rr_spine(U, i, j)
+            if np.abs(U[i, j]) < ZERO_TOL:
+                raise ZeroDivisionError("Zero pivot encountered")
             pivots.append((i, j))
+            rr_step = _rr_spine(U, i, j)
             rr_step.dot(U, out=U)
             rr_step[i + 1 :, i] = -1 * rr_step[i + 1 :, i]
             L.dot(rr_step, out=L)
@@ -123,8 +125,8 @@ def _lu_gauss_partial(
 ) -> tuple[NPMatrix, NPMatrix, NPMatrix, None, list[tuple[int, int]]]:
     m, n = A.shape
     column_lim = n if column_lim is None else min(n, column_lim)
-    L = np.identity(m, dtype=A.dtype)
     P = np.identity(m, dtype=A.dtype)
+    L = np.identity(m, dtype=A.dtype)
     U = A.copy()
     j = 0
     pivots = []
@@ -133,6 +135,7 @@ def _lu_gauss_partial(
             if is_zero(U[i:, j]).all():
                 j += 1
                 continue
+            pivots.append((i, j))
             best_row = np.argmax(np.abs(U[i:, j])) + i
             if best_row != i:
                 P_i = _get_exchange(m, i, best_row)
@@ -141,7 +144,6 @@ def _lu_gauss_partial(
                 P_i.dot(L, out=L)
                 L.dot(P_i, out=L)
             rr_step = _rr_spine(U, i, j)
-            pivots.append((i, j))
             rr_step.dot(U, out=U)
             rr_step[i + 1 :, i] = -1 * rr_step[i + 1 :, i]
             L.dot(rr_step, out=L)
@@ -159,9 +161,9 @@ def _lu_gauss_complete(
 ) -> tuple[NPMatrix, NPMatrix, NPMatrix, NPMatrix, list[tuple[int, int]]]:
     m, n = A.shape
     column_lim = n if column_lim is None else min(n, column_lim)
-    L = np.identity(m, dtype=A.dtype)
     P = np.identity(m, dtype=A.dtype)
     Q = np.identity(n, dtype=A.dtype)
+    L = np.identity(m, dtype=A.dtype)
     U = A.copy()
     j = 0
     pivots = []
@@ -170,8 +172,10 @@ def _lu_gauss_complete(
             if is_zero(U[i:, j]).all():
                 j += 1
                 continue
+            pivots.append((i, j))
             best_r, best_c = np.unravel_index(
-                np.argmax(np.abs(U[i:, j:column_lim])), shape=(m - i, column_lim - j)
+                np.argmax(np.abs(U[i:, j:column_lim])),
+                shape=(m - i, column_lim - j),
             )
             best_r += i
             best_c += j
@@ -186,7 +190,6 @@ def _lu_gauss_complete(
                 Q.dot(C_j, out=Q)
                 U.dot(C_j, out=U)
             rr_step = _rr_spine(U, i, j)
-            pivots.append((i, j))
             rr_step.dot(U, out=U)
             rr_step[i + 1 :, i] = -1 * rr_step[i + 1 :, i]
             L.dot(rr_step, out=L)
