@@ -26,15 +26,13 @@ def forward_substitution(A: Matrix, b: Matrix) -> NPMatrix:
     return
 
 
-def gauss_jordan_solver(
-    A: Matrix,
-    b: Matrix,
-) -> NPMatrix:
+def gauss_jordan_solver(A: Matrix, b: Matrix) -> NPMatrix:
     return
 
 
-def lu_solver(
-    A: Matrix,
-    b: Matrix,
-) -> NPMatrix:
+def lu_solver(A: Matrix, b: Matrix) -> NPMatrix:
+    return
+
+
+def least_squares_solver(A: Matrix, b: Matrix) -> NPMatrix:
     return
