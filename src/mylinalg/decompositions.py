@@ -226,10 +226,9 @@ def lu(
     return L, U, P, Q
 
 
-def qr(A: Matrix, independence_tol: Optional[float] = None) -> tuple[NPMatrix, NPMatrix]:
+def qr(A: Matrix) -> tuple[NPMatrix, NPMatrix]:
     A = check_matrix(A)
-    independence_tol = ZERO_TOL if independence_tol is None else independence_tol
-    return _qr_gram_schmidt(A, independence_tol=independence_tol)
+    return _qr_householder(A)
 
 
 def cholesky(A: Matrix) -> NPMatrix:
