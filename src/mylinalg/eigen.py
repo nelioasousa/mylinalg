@@ -2,6 +2,7 @@
 
 from typing import Optional
 import numpy as np
+from mylinalg.decompositions import _householder_reflector
 from mylinalg.utils import Matrix, NPMatrix, check_matrix
 from mylinalg.utils import ZERO_TOL
 
@@ -35,3 +36,19 @@ def standard_power_iteration(
     if shift is None:
         return lambda1.item(), v1
     return lambda1.item() + shift, v1
+
+
+def similarity_reduction(A: Matrix) -> tuple[NPMatrix, NPMatrix]:
+    A = check_matrix(A)
+    m, n = A.shape
+    if m != n:
+        raise ValueError("Non-square matrix")
+    S = A.copy()
+    Q = np.identity(m, dtype=A.dtype)
+    for i in range(m - 2):
+        H_i = np.identity(m, dtype=A.dtype)
+        H_i[i + 1 :, i + 1 :] = _householder_reflector(S[i + 1 :, [i]])
+        H_i.dot(S, out=S)
+        S.dot(H_i, out=S)
+        Q.dot(H_i, out=Q)
+    return Q, S
