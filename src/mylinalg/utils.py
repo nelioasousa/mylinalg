@@ -28,7 +28,7 @@ def check_matrix(
     if m is None and n is None:
         if len(matrix.shape) < 2:
             # Preference for column vectors
-            matrix.resize((m.size, 1))
+            matrix.resize((matrix.size, 1))
         return matrix
     m = matrix.size // n if m is None else m
     n = matrix.size // m if n is None else n
