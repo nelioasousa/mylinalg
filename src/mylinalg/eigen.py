@@ -24,15 +24,14 @@ def standard_power_iteration(
     v0 = np.ones((A.shape[0], 1), dtype=A.dtype)
     v1 = np.empty_like(v0)
     lambda0 = 0.0
-    with np.errstate(divide="raise", invalid="raise", over="raise"):
-        for _ in range(max_iterations):
-            A.dot(v0, out=v1)
-            lambda1 = v0.T.dot(v1) / v0.T.dot(v0)
-            v1[:] /= np.linalg.norm(v1)
-            if np.abs(lambda1 - lambda0) < convergence_tol:
-                break
-            v0[:] = v1
-            lambda0 = lambda1
+    for _ in range(max_iterations):
+        A.dot(v0, out=v1)
+        lambda1 = v0.T.dot(v1) / v0.T.dot(v0)
+        v1[:] /= np.linalg.norm(v1)
+        if np.abs(lambda1 - lambda0) < convergence_tol:
+            break
+        v0[:] = v1
+        lambda0 = lambda1
     if shift is None:
         return lambda1.item(), v1
     return lambda1.item() + shift, v1

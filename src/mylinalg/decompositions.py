@@ -64,14 +64,13 @@ def _qr_gram_schmidt(A: NPMatrix, independence_tol: float) -> tuple[NPMatrix, NP
     n = A.shape[1]
     Q = A.copy()
     R = np.zeros((n, n), dtype=A.dtype)
-    with np.errstate(divide="raise", invalid="raise", over="raise"):
-        for j in range(n):
-            R[j, j] = np.linalg.norm(Q[:, j])
-            if R[j, j] >= independence_tol:
-                Q[:, j] /= R[j, j]
-            for i in range(j + 1, n):
-                R[j, i] = Q[:, j].dot(Q[:, i])
-                Q[:, i] -= R[j, i] * Q[:, j]
+    for j in range(n):
+        R[j, j] = np.linalg.norm(Q[:, j])
+        if R[j, j] >= independence_tol:
+            Q[:, j] /= R[j, j]
+        for i in range(j + 1, n):
+            R[j, i] = Q[:, j].dot(Q[:, i])
+            Q[:, i] -= R[j, i] * Q[:, j]
     return Q, R
 
 
@@ -83,11 +82,10 @@ def _get_exchange(n: int, i: int, j: int) -> NPMatrix:
 
 def _rr_spine(rr: NPMatrix, i: int, j: int, invert: bool = False):
     rr_step = np.identity(rr.shape[0], dtype=rr.dtype)
-    with np.errstate(divide="raise", invalid="raise", over="raise"):
-        if invert:
-            rr_step[:i, i] = -1 * rr[:i, j] / rr[i, j]
-        else:
-            rr_step[i + 1 :, i] = -1 * rr[i + 1 :, j] / rr[i, j]
+    if invert:
+        rr_step[:i, i] = -1 * rr[:i, j] / rr[i, j]
+    else:
+        rr_step[i + 1 :, i] = -1 * rr[i + 1 :, j] / rr[i, j]
     return rr_step
 
 
@@ -206,8 +204,7 @@ def _lu_doolittle(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
     U = np.zeros((m, n), dtype=A.dtype)
     for i in range(m):
         U[[i], i:] = A[[i], i:] - L[[i], :i].dot(U[:i, i:])
-        with np.errstate(divide="raise", invalid="raise", over="raise"):
-            L[i + 1 :, [i]] = (A[i + 1 :, [i]] - L[i + 1 :, :i].dot(U[:i, [i]])) / U[i, i]
+        L[i + 1 :, [i]] = (A[i + 1 :, [i]] - L[i + 1 :, :i].dot(U[:i, [i]])) / U[i, i]
     return L, U
 
 
@@ -235,9 +232,8 @@ def cholesky(A: Matrix) -> NPMatrix:
     A = check_matrix(A)
     n = len(A)
     L = np.zeros_like(A)
-    with np.errstate(divide="raise", invalid="raise", over="raise"):
-        for j in range(n):
-            L[j:, [j]] = A[j:, [j]] - L[j:, :j].dot(L[[j], :j].T)
-            L[j, j] = np.sqrt(L[j, j])
-            L[j + 1 :, j] /= L[j, j]
+    for j in range(n):
+        L[j:, [j]] = A[j:, [j]] - L[j:, :j].dot(L[[j], :j].T)
+        L[j, j] = np.sqrt(L[j, j])
+        L[j + 1 :, j] /= L[j, j]
     return L
