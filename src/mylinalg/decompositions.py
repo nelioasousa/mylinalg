@@ -1,12 +1,37 @@
 """Matrix decompositons."""
 
+from typing import Literal, Optional
 import numpy as np
 from mylinalg.utils import TargetDtype, NPMatrix, Matrix
 from mylinalg.utils import check_matrix, is_zero, ZERO_TOL
-from typing import Literal, Optional
 
 
 type Pivoting = Literal["none", "partial", "complete"]
+
+
+def _householder_reflector(A: NPMatrix) -> NPMatrix:
+    m, n = A.shape
+    if n != 1:
+        raise ValueError("`A` must be a column vector.")
+    norm = np.linalg.norm(A)
+    u = A.copy()
+    u[0, 0] += norm if A[0, 0] >= 0 else (-1 * norm)
+    u[:] /= np.linalg.norm(u)
+    H = np.identity(m, dtype=A.dtype)
+    H[:] -= 2 * u.dot(u.T)
+    return H
+
+
+def _qr_householder(A: NPMatrix):
+    m, n = A.shape
+    Q = np.identity(m, dtype=A.dtype)
+    R = A.copy()
+    for i in range(min(m - 1, n)):
+        H_i = np.identity(m, dtype=A.dtype)
+        H_i[i:, i:] = _householder_reflector(R[i:, [i]])
+        H_i.dot(R, out=R)
+        Q.dot(H_i, out=Q)
+    return Q, R
 
 
 def rank_revealing_qr(

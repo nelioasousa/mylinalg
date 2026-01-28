@@ -5,7 +5,7 @@ import numpy as np
 from mylinalg.utils import NPMatrix, Matrix, check_matrix, ZERO_TOL
 from mylinalg.decompositions import _qr_gram_schmidt, rank_revealing_qr
 from mylinalg.decompositions import _lu_gauss_none, _lu_gauss_partial, _lu_gauss_complete
-from mylinalg.decompositions import _rr_spine
+from mylinalg.decompositions import _rr_spine, _householder_reflector
 from mylinalg.decompositions import Pivoting
 
 
@@ -74,13 +74,4 @@ def column_space_projector(
 
 def householder_reflector(A: Matrix) -> NPMatrix:
     A = check_matrix(A)
-    m, n = A.shape
-    if n != 1:
-        raise ValueError("`A` must be a column vector.")
-    norm = np.linalg.norm(A)
-    u = A.copy()
-    u[0, 0] += norm if A[0, 0] >= 0 else (-1 * norm)
-    u[:] /= np.linalg.norm(u)
-    H = np.identity(m, dtype=A.dtype)
-    H[:] -= 2 * u.dot(u.T)
-    return H
+    return _householder_reflector(A)
