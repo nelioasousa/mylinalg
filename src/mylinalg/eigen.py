@@ -14,6 +14,17 @@ def standard_power_iteration(
     max_iterations: int = 100,
     convergence_tol: Optional[float] = None,
 ) -> tuple[float, NPMatrix]:
+    """Método da potência para determinar autovalores e autovetores.
+
+    Entrada:
+        `A (Matrix)` - Matriz da qual procurar autovalores e autovetores.
+        `shift (None | float)` - Aplicar shift na matriz `A` antes de iterar.
+        `max_iterations (int)` - Iterações máximas a serem realizadas. O loop para quando a tolerância for atingida ou quando `max_iterations` é alcançado.
+        `convergence_tol (None | float)` - Regula a tolerância que decide quando o altovalor convergiu.
+
+    Saída:
+        `tuple[float, NPMatrix]` - Par autovalor e autovetor encontrado.
+    """
     A = check_matrix(A)
     m, n = A.shape
     if m != n:
@@ -39,6 +50,16 @@ def standard_power_iteration(
 
 
 def hessenberg_reduction(A: Matrix) -> tuple[NPMatrix, NPMatrix]:
+    """Redução de similaridade de Hessenberg para matrizes quadradas.
+
+    Quando `A` é simétrica, o resultado é uma matriz semelhante na forma tridiagonal. Quando `A` não é simétrica, o resultado é uma matriz chamada Upper-Hessenberg.
+
+    Entrada:
+        `A (Matrix)` - Matriz a ser transformada por similaridade.
+
+    Saída:
+        `tuple[NPMatrix, NPMatrix]` - Par de matrizes `(H, S)`, onde `S` é uma matriz similar à `A`, de modo que `A = H @ S @ H.T`.
+    """
     A = check_matrix(A)
     m, n = A.shape
     if m != n:
@@ -59,6 +80,16 @@ def qr_method(
     max_iterations: int = 100,
     convergence_tol: Optional[float] = None,
 ) -> tuple[list[float], NPMatrix]:
+    """Computa autovalores e autovetores de `A` usando a iteração QR.
+
+    Entrada:
+        `A (Matrix)` - Matriz da qual buscar autovalores e autovetores.
+        `max_iterations (int)` - Quantidade máxima de iterações do método QR.
+        `convergence_tol (None | float)` - Regula a tolerância que decide quando o método convergiu.
+
+    Saída:
+        `tuple[list[float], NPMatrix]` - Lista com os autovalores e matriz com os correspondentes autovetores.
+    """
     A = check_matrix(A)
     m, n = A.shape
     if m != n:

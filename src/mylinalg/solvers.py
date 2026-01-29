@@ -7,6 +7,14 @@ from mylinalg.utils import NPMatrix, Matrix, check_matrix
 
 
 def matrix_inverse(A: Matrix) -> NPMatrix:
+    """Computa a inversa da matriz A usando Gauss-Jordan.
+
+    Entrada:
+        `A (Matrix)` - Matriz para qual computar a inversa.
+
+    Saída:
+        `NPMatrix` - Inversa da matriz `A`.
+    """
     A = check_matrix(A)
     m, n = A.shape
     if m != n:

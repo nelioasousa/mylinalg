@@ -1,8 +1,8 @@
-"""Matrix decompositons."""
+"""Matrix decompositions."""
 
 from typing import Literal, Optional
 import numpy as np
-from mylinalg.utils import TargetDtype, NPMatrix, Matrix
+from mylinalg.utils import NPMatrix, Matrix
 from mylinalg.utils import check_matrix, is_zero, ZERO_TOL
 
 
@@ -37,6 +37,15 @@ def _qr_householder(A: NPMatrix):
 def rank_revealing_qr(
     A: Matrix, independence_tol: Optional[float] = None
 ) -> tuple[NPMatrix, NPMatrix, NPMatrix]:
+    """Retorna uma decomposição QR onde Q é uma base ortonormal de A.
+
+    Entrada:
+        `A (Matrix)` - Matriz de entrada a ser decomposta.
+        `independence_tol (None | float)` - Tolerância para considerar que uma coluna de `A` colapsou na origem (é combinação linear de outras colunas de `A`).
+
+    Saída:
+        `tuple[NPMatrix, NPMatrix, NPMatrix]` - Tripla de matrizes `(P, Q, R)`, de modo que `A @ P = Q @ R`.
+    """
     A = check_matrix(A)
     independence_tol = ZERO_TOL if independence_tol is None else independence_tol
     _, n = A.shape
@@ -72,12 +81,6 @@ def _qr_gram_schmidt(A: NPMatrix, independence_tol: float) -> tuple[NPMatrix, NP
             R[j, i] = Q[:, j].dot(Q[:, i])
             Q[:, i] -= R[j, i] * Q[:, j]
     return Q, R
-
-
-def _get_exchange(n: int, i: int, j: int) -> NPMatrix:
-    exchange = np.identity(n, dtype=TargetDtype)
-    exchange[[i, j]] = exchange[[j, i]]
-    return exchange
 
 
 def _rr_spine(rr: NPMatrix, i: int, j: int, invert: bool = False):
@@ -138,7 +141,8 @@ def _lu_gauss_partial(
             pivots.append((i, j))
             best_row = np.argmax(np.abs(U[i:, j])) + i
             if best_row != i:
-                P_i = _get_exchange(m, i, best_row)
+                P_i = np.identity(m, dtype=A.dtype)
+                P_i[[i, best_row]] = P_i[[best_row, i]]
                 P_i.dot(P, out=P)
                 P_i.dot(U, out=U)
                 P_i.dot(L, out=L)
@@ -180,13 +184,15 @@ def _lu_gauss_complete(
             best_r += i
             best_c += j
             if best_r != i:
-                P_i = _get_exchange(m, i, best_r)
+                P_i = np.identity(m, dtype=A.dtype)
+                P_i[[i, best_r]] = P_i[[best_r, i]]
                 P_i.dot(P, out=P)
                 P_i.dot(U, out=U)
                 P_i.dot(L, out=L)
                 L.dot(P_i, out=L)
             if best_c != j:
-                C_j = _get_exchange(n, j, best_c)
+                C_j = np.identity(n, dtype=A.dtype)
+                C_j[[j, best_c]] = C_j[[best_c, j]]
                 Q.dot(C_j, out=Q)
                 U.dot(C_j, out=U)
             rr_step = _rr_spine(U, i, j)
@@ -215,6 +221,15 @@ def lu(
     A: Matrix,
     pivoting: Pivoting = "none",
 ) -> tuple[NPMatrix, NPMatrix, Optional[NPMatrix], Optional[NPMatrix]]:
+    """Decomposição LU.
+
+    Entrada:
+        `A (Matrix)` - Matriz a ser decomposta.
+        `pivoting (Pivoting)` - Tipo de pivotação a ser executada. Pode ser `"none"`, `"partial"` ou `"complete"`.
+
+    Saída:
+        `tuple[NPMatrix, NPMatrix, Optional[NPMatrix], Optional[NPMatrix]]` - Quadra de matrizes `(L, U, P, Q)`, de modo que `P @ A @ Q = L @ U`.
+    """
     A = check_matrix(A)
     if pivoting == "none":
         L, U = _lu_doolittle(A)
@@ -227,11 +242,27 @@ def lu(
 
 
 def qr(A: Matrix) -> tuple[NPMatrix, NPMatrix]:
+    """Decomposição QR usando transformações de Householder.
+
+    Entrada:
+        `A (Matrix)` - Matriz a ser decomposta.
+
+    Saída:
+        `tuple[NPMatrix, NPMatrix]` - Par de matrizes `(Q, R)`, de modo que `A = Q @ R`.
+    """
     A = check_matrix(A)
     return _qr_householder(A)
 
 
 def cholesky(A: Matrix) -> NPMatrix:
+    """Decomposição de Cholesky.
+
+    Entrada:
+        `A (Matrix)` - Matriz a ser decomposta.
+
+    Saída:
+        `NPMatrix` - Matriz `L`, de modo que `A = L @ L.T`.
+    """
     A = check_matrix(A)
     n = len(A)
     L = np.zeros_like(A)
@@ -268,6 +299,14 @@ def svd(
     max_iterations: int = 100,
     convergence_tol: Optional[float] = None,
 ) -> tuple[NPMatrix, NPMatrix, NPMatrix]:
+    """Decomposição SVD (Singular Value Decomposition).
+
+    Entrada:
+        `A (Matrix)` - Matriz a ser decomposta.
+
+    Saída:
+        `tuple[NPMatrix, NPMatrix, NPMatrix]` - Tripla de matrizes `(U, S, V)`, de modo que `A = U @ S @ V`.
+    """
     A = check_matrix(A)
     m, n = A.shape
     U_1, B, VT_1 = _bidiagonal_reduction(A)
