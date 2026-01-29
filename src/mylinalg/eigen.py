@@ -3,8 +3,9 @@
 from typing import Optional
 import numpy as np
 from mylinalg.decompositions import _householder_reflector
+from mylinalg.decompositions import _qr_householder
 from mylinalg.utils import Matrix, NPMatrix, check_matrix
-from mylinalg.utils import ZERO_TOL
+from mylinalg.utils import ZERO_TOL, is_zero
 
 
 def standard_power_iteration(
@@ -43,11 +44,42 @@ def similarity_reduction(A: Matrix) -> tuple[NPMatrix, NPMatrix]:
     if m != n:
         raise ValueError("Non-square matrix")
     S = A.copy()
-    Q = np.identity(m, dtype=A.dtype)
+    H = np.identity(m, dtype=A.dtype)
     for i in range(m - 2):
         H_i = np.identity(m, dtype=A.dtype)
         H_i[i + 1 :, i + 1 :] = _householder_reflector(S[i + 1 :, [i]])
         H_i.dot(S, out=S)
         S.dot(H_i, out=S)
-        Q.dot(H_i, out=Q)
-    return Q, S
+        H.dot(H_i, out=H)
+    return H, S
+
+
+def qr_method(
+    A: Matrix,
+    max_iterations: int = 100,
+    convergence_tol: Optional[float] = None,
+) -> tuple[list[float], NPMatrix]:
+    A = check_matrix(A)
+    m, n = A.shape
+    if m != n:
+        raise ValueError("Non-square matrix")
+    if not is_zero(A - A.T).all():
+        raise NotImplementedError("Only symmetric matrices")
+    max_iterations = max(1, max_iterations)
+    convergence_tol = ZERO_TOL if convergence_tol is None else convergence_tol
+    H, A_i = similarity_reduction(A)
+    iteration = 0
+    for i in range(m, 1, -1):
+        shift = np.identity(i, dtype=A_i.dtype)
+        while iteration < max_iterations:
+            np.fill_diagonal(shift, A_i[i - 1, i - 1])
+            A_i[:i, :i] -= shift
+            Qi, Ri = _qr_householder(A_i[:i, :i])
+            H[:, :i].dot(Qi, out=H[:, :i])
+            A_i[:i, :i] = Ri.dot(Qi) + shift
+            iteration += 1
+            if np.abs(A_i[i - 1, i - 2]) < convergence_tol:
+                break
+        else:
+            break
+    return np.diagonal(A_i).tolist(), H
