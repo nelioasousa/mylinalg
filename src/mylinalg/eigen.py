@@ -75,7 +75,7 @@ def qr_method(
             np.fill_diagonal(shift, A_i[i - 1, i - 1])
             A_i[:i, :i] -= shift
             Qi, Ri = _qr_householder(A_i[:i, :i])
-            H[:, :i].dot(Qi, out=H[:, :i])
+            H[:, :i] = H[:, :i].dot(Qi)
             A_i[:i, :i] = Ri.dot(Qi) + shift
             iteration += 1
             if np.abs(A_i[i - 1, i - 2]) < convergence_tol:

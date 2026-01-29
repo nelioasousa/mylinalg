@@ -240,3 +240,64 @@ def cholesky(A: Matrix) -> NPMatrix:
         L[j, j] = np.sqrt(L[j, j])
         L[j + 1 :, j] /= L[j, j]
     return L
+
+
+def _bidiagonal_reduction(A: NPMatrix) -> tuple[NPMatrix, NPMatrix, NPMatrix]:
+    m, n = A.shape
+    U = np.identity(m, dtype=A.dtype)
+    B = A.copy()
+    V_T = np.identity(n, dtype=A.dtype)
+    l_lim = min(m - 1, n)
+    r_lim = min(m, n - 2)
+    for i in range(max(l_lim, r_lim)):
+        if i < l_lim:
+            U_i = np.identity(m, dtype=A.dtype)
+            U_i[i:, i:] = _householder_reflector(B[i:, [i]])
+            U.dot(U_i, out=U)
+            U_i.dot(B, out=B)
+        if i < r_lim:
+            V_i = np.identity(n, dtype=A.dtype)
+            V_i[i + 1 :, i + 1 :] = _householder_reflector(B[[i], i + 1 :].T)
+            V_i.dot(V_T, out=V_T)
+            B.dot(V_i, out=B)
+    return U, B, V_T
+
+
+def svd(
+    A: Matrix,
+    max_iterations: int = 100,
+    convergence_tol: Optional[float] = None,
+) -> tuple[NPMatrix, NPMatrix, NPMatrix]:
+    A = check_matrix(A)
+    m, n = A.shape
+    U_1, B, VT_1 = _bidiagonal_reduction(A)
+    if m < n:
+        B_t = B.dot(B.T)
+    else:
+        B_t = B.T.dot(B)
+    max_iterations = max(1, max_iterations)
+    convergence_tol = ZERO_TOL if convergence_tol is None else convergence_tol
+    H = np.identity(B_t.shape[0], dtype=B_t.dtype)
+    iteration = 0
+    for i in range(B_t.shape[0], 1, -1):
+        shift = np.identity(i, dtype=B_t.dtype)
+        while iteration < max_iterations:
+            np.fill_diagonal(shift, B_t[i - 1, i - 1])
+            B_t[:i, :i] -= shift
+            Qi, Ri = _qr_householder(B_t[:i, :i])
+            H[:, :i] = H[:, :i].dot(Qi)
+            B_t[:i, :i] = Ri.dot(Qi) + shift
+            iteration += 1
+            if np.abs(B_t[i - 1, i - 2]) < convergence_tol:
+                break
+        else:
+            break
+    Sigma = np.diag(np.sqrt(np.diagonal(B_t)))
+    SigmaInv = np.diag(1 / np.diagonal(Sigma))
+    if m < n:
+        U = U_1.dot(H)
+        V_T = SigmaInv.dot(U.T).dot(A)
+    else:
+        V_T = H.T.dot(VT_1)
+        U = A.dot(V_T.T).dot(SigmaInv)
+    return U, Sigma, V_T
