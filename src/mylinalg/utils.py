@@ -7,7 +7,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 
-ZERO_TOL = 1e-10
+ZERO_TOL = 1e-20
 
 
 TargetDtype = np.float64
