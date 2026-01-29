@@ -38,7 +38,7 @@ def standard_power_iteration(
     return lambda1.item() + shift, v1
 
 
-def similarity_reduction(A: Matrix) -> tuple[NPMatrix, NPMatrix]:
+def hessenberg_reduction(A: Matrix) -> tuple[NPMatrix, NPMatrix]:
     A = check_matrix(A)
     m, n = A.shape
     if m != n:
@@ -67,7 +67,7 @@ def qr_method(
         raise NotImplementedError("Only symmetric matrices")
     max_iterations = max(1, max_iterations)
     convergence_tol = ZERO_TOL if convergence_tol is None else convergence_tol
-    H, A_i = similarity_reduction(A)
+    H, A_i = hessenberg_reduction(A)
     iteration = 0
     for i in range(m, 1, -1):
         shift = np.identity(i, dtype=A_i.dtype)
