@@ -94,7 +94,17 @@ def gauss_jordan_solver(A: Matrix, b: Matrix) -> NPMatrix:
 
 
 def lu_solver(A: Matrix, b: Matrix) -> NPMatrix:
-    return
+    A = check_matrix(A)
+    b = check_matrix(b)
+    m, n = A.shape
+    if m != n:
+        raise ValueError("Non-square matrix")
+    if b.shape[0] != m:
+        raise ValueError("Shape mismatch between `A` and `b`")
+    L, U, P, _ = lu(A, pivoting="partial")
+    b_mod = P.dot(b)
+    y = forward_substitution(L, b_mod)
+    return backward_substitution(U, y)
 
 
 def least_squares_solver(A: Matrix, b: Matrix) -> NPMatrix:
