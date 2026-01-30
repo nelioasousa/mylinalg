@@ -3,7 +3,7 @@
 from typing import Literal, Optional
 import numpy as np
 from mylinalg.utils import NPMatrix, Matrix
-from mylinalg.utils import check_matrix, is_zero, ZERO_TOL
+from mylinalg.utils import check_matrix, is_zero, ZERO_TOL, ZERO_TOL_ITER
 
 
 type Pivoting = Literal["none", "partial", "complete"]
@@ -315,7 +315,7 @@ def svd(
     else:
         B_t = B.T.dot(B)
     max_iterations = max(1, max_iterations)
-    convergence_tol = ZERO_TOL if convergence_tol is None else convergence_tol
+    convergence_tol = ZERO_TOL_ITER if convergence_tol is None else convergence_tol
     H = np.identity(B_t.shape[0], dtype=B_t.dtype)
     iteration = 0
     for i in range(B_t.shape[0], 1, -1):

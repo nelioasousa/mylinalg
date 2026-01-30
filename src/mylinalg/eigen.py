@@ -5,7 +5,7 @@ import numpy as np
 from mylinalg.decompositions import _householder_reflector
 from mylinalg.decompositions import _qr_householder
 from mylinalg.utils import Matrix, NPMatrix, check_matrix
-from mylinalg.utils import ZERO_TOL, is_zero
+from mylinalg.utils import ZERO_TOL_ITER, is_zero
 
 
 def standard_power_iteration(
@@ -32,7 +32,7 @@ def standard_power_iteration(
     if shift is not None:
         A[:] -= shift * np.identity(m, dtype=A.dtype)
     max_iterations = max(1, max_iterations)
-    convergence_tol = ZERO_TOL if convergence_tol is None else convergence_tol
+    convergence_tol = ZERO_TOL_ITER if convergence_tol is None else convergence_tol
     v0 = np.ones((m, 1), dtype=A.dtype)
     v1 = np.empty_like(v0)
     lambda0 = 0.0
@@ -97,7 +97,7 @@ def qr_method(
     if not is_zero(A - A.T).all():
         raise NotImplementedError("Only symmetric matrices")
     max_iterations = max(1, max_iterations)
-    convergence_tol = ZERO_TOL if convergence_tol is None else convergence_tol
+    convergence_tol = ZERO_TOL_ITER if convergence_tol is None else convergence_tol
     H, A_i = hessenberg_reduction(A)
     iteration = 0
     for i in range(m, 1, -1):
