@@ -240,9 +240,8 @@ def lu(
     """
     A = check_matrix(A)
     if pivoting == "none":
-        L, U = _lu_doolittle(A)
-        return L, U, None, None
-    if pivoting == "partial":
+        _, L, U, P, Q, _ = _lu_gauss_none(A)
+    elif pivoting == "partial":
         _, L, U, P, Q, _ = _lu_gauss_partial(A)
     else:
         _, L, U, P, Q, _ = _lu_gauss_complete(A)
