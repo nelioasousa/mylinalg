@@ -72,6 +72,10 @@ def hessenberg_reduction(A: Matrix) -> tuple[NPMatrix, NPMatrix]:
         H_i.dot(S, out=S)
         S.dot(H_i, out=S)
         H.dot(H_i, out=H)
+        print(">>> PASSO %d" % (i + 1))
+        print("Transformação de Householder:\n", H_i.round(2), sep="", end="\n\n")
+        print("Matriz similar:\n", S.round(1), sep="", end="\n\n")
+        print("Householder acumulada:\n", H.round(2), sep="", end="\n\n")
     return H, S
 
 
