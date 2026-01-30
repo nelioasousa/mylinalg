@@ -19,6 +19,7 @@ readme = {file = "README.md", content-type = "text/markdown"}
 
 [project.optional-dependencies]
 dev = ["pre-commit", "ruff"]
+note = ["ipykernel", "jupyterlab"]
 
 [project.urls]
 Source = "https://github.com/nelioasousa/mylinalg"
