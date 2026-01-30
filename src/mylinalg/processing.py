@@ -35,7 +35,7 @@ def ref(
         lu_dec = _lu_gauss_partial(A, column_lim=column_lim)
     else:
         lu_dec = _lu_gauss_complete(A, column_lim=column_lim)
-    _, ref, *_, pivots = lu_dec
+    _, _, ref, *_, pivots = lu_dec
     if return_pivots_loc:
         return ref, pivots
     return ref
@@ -67,7 +67,7 @@ def rref(
         lu_dec = _lu_gauss_partial(A, column_lim=column_lim)
     else:
         lu_dec = _lu_gauss_complete(A, column_lim=column_lim)
-    _, rref, *_, pivots = lu_dec
+    _, _, rref, *_, pivots = lu_dec
     for i, j in pivots:
         rr_step = _rr_spine(rref, i, j, invert=True)
         rr_step[i, i] = 1 / rref[i, j]

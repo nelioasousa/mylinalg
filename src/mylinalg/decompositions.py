@@ -98,6 +98,7 @@ def _lu_gauss_none(
 ) -> tuple[NPMatrix, NPMatrix, None, None, list[tuple[int, int]]]:
     m, n = A.shape
     column_lim = n if column_lim is None else min(n, column_lim)
+    acc_steps = np.identity(m, dtype=A.dtype)
     L = np.identity(m, dtype=A.dtype)
     U = A.copy()
     j = 0
@@ -112,6 +113,7 @@ def _lu_gauss_none(
             pivots.append((i, j))
             rr_step = _rr_spine(U, i, j)
             rr_step.dot(U, out=U)
+            rr_step.dot(acc_steps, out=acc_steps)
             rr_step[i + 1 :, i] = -1 * rr_step[i + 1 :, i]
             L.dot(rr_step, out=L)
             j += 1
@@ -119,7 +121,7 @@ def _lu_gauss_none(
         else:
             break
     # LU = A
-    return L, U, None, None, pivots
+    return acc_steps, L, U, None, None, pivots
 
 
 def _lu_gauss_partial(
@@ -129,6 +131,7 @@ def _lu_gauss_partial(
     m, n = A.shape
     column_lim = n if column_lim is None else min(n, column_lim)
     P = np.identity(m, dtype=A.dtype)
+    acc_steps = np.identity(m, dtype=A.dtype)
     L = np.identity(m, dtype=A.dtype)
     U = A.copy()
     j = 0
@@ -147,8 +150,10 @@ def _lu_gauss_partial(
                 P_i.dot(U, out=U)
                 P_i.dot(L, out=L)
                 L.dot(P_i, out=L)
+                P_i.dot(acc_steps, out=acc_steps)
             rr_step = _rr_spine(U, i, j)
             rr_step.dot(U, out=U)
+            rr_step.dot(acc_steps, out=acc_steps)
             rr_step[i + 1 :, i] = -1 * rr_step[i + 1 :, i]
             L.dot(rr_step, out=L)
             j += 1
@@ -156,7 +161,7 @@ def _lu_gauss_partial(
         else:
             break
     # LU = PA
-    return L, U, P, None, pivots
+    return acc_steps, L, U, P, None, pivots
 
 
 def _lu_gauss_complete(
@@ -167,6 +172,7 @@ def _lu_gauss_complete(
     column_lim = n if column_lim is None else min(n, column_lim)
     P = np.identity(m, dtype=A.dtype)
     Q = np.identity(n, dtype=A.dtype)
+    acc_steps = np.identity(m, dtype=A.dtype)
     L = np.identity(m, dtype=A.dtype)
     U = A.copy()
     j = 0
@@ -190,6 +196,7 @@ def _lu_gauss_complete(
                 P_i.dot(U, out=U)
                 P_i.dot(L, out=L)
                 L.dot(P_i, out=L)
+                P_i.dot(acc_steps, out=acc_steps)
             if best_c != j:
                 C_j = np.identity(n, dtype=A.dtype)
                 C_j[[j, best_c]] = C_j[[best_c, j]]
@@ -197,6 +204,7 @@ def _lu_gauss_complete(
                 U.dot(C_j, out=U)
             rr_step = _rr_spine(U, i, j)
             rr_step.dot(U, out=U)
+            rr_step.dot(acc_steps, out=acc_steps)
             rr_step[i + 1 :, i] = -1 * rr_step[i + 1 :, i]
             L.dot(rr_step, out=L)
             j += 1
@@ -204,7 +212,7 @@ def _lu_gauss_complete(
         else:
             break
     # LU = PAQ
-    return L, U, P, Q, pivots
+    return acc_steps, L, U, P, Q, pivots
 
 
 def _lu_doolittle(A: NPMatrix) -> tuple[NPMatrix, NPMatrix]:
@@ -235,9 +243,9 @@ def lu(
         L, U = _lu_doolittle(A)
         return L, U, None, None
     if pivoting == "partial":
-        L, U, P, Q, _ = _lu_gauss_partial(A)
+        _, L, U, P, Q, _ = _lu_gauss_partial(A)
     else:
-        L, U, P, Q, _ = _lu_gauss_complete(A)
+        _, L, U, P, Q, _ = _lu_gauss_complete(A)
     return L, U, P, Q
 
 

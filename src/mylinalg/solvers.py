@@ -2,7 +2,8 @@
 
 import numpy as np
 from mylinalg.processing import rref
-from mylinalg.decompositions import lu
+from mylinalg.decompositions import Pivoting, lu
+from mylinalg.decompositions import _lu_gauss_none, _lu_gauss_partial, _lu_gauss_complete
 from mylinalg.utils import NPMatrix, Matrix, check_matrix, ZERO_TOL
 
 
@@ -56,6 +57,25 @@ def forward_substitution(A: Matrix, b: Matrix) -> NPMatrix:
             continue
         solutions[i, :] = (b[i, :] - A[[i], :i].dot(solutions[:i, :])) / A[i, i]
     return solutions
+
+
+def gauss_elimination_solver(A: Matrix, b: Matrix, pivoting: Pivoting) -> NPMatrix:
+    A = check_matrix(A)
+    b = check_matrix(b)
+    m, n = A.shape
+    if m != n:
+        raise ValueError("Non-square matrix")
+    if b.shape[0] != m:
+        raise ValueError("Shape mismatch between `A` and `b`")
+    if pivoting == "none" or pivoting == "partial":
+        acc_steps, _, U, *_ = _lu_gauss_none(A)
+        b_mod = acc_steps.dot(b)
+        return backward_substitution(U, b_mod)
+    else:
+        acc_steps, _, U, _, Q, _ = _lu_gauss_complete(A)
+        b_mod = acc_steps.dot(b)
+        x_mod = backward_substitution(U, b_mod)
+        return Q.dot(x_mod)
 
 
 def gauss_jordan_solver(A: Matrix, b: Matrix) -> NPMatrix:
