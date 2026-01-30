@@ -275,7 +275,10 @@ def cholesky(A: Matrix) -> NPMatrix:
     L = np.zeros_like(A)
     for j in range(n):
         L[j:, [j]] = A[j:, [j]] - L[j:, :j].dot(L[[j], :j].T)
-        L[j, j] = np.sqrt(L[j, j])
+        try:
+            L[j, j] = np.sqrt(L[j, j])
+        except FloatingPointError:
+            raise ValueError("Matrix is not positive definite") from None
         L[j + 1 :, j] /= L[j, j]
     return L
 
