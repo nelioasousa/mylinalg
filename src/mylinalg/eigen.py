@@ -2,8 +2,10 @@
 
 from typing import Optional
 import numpy as np
+from mylinalg.decompositions import _lu_gauss_partial
 from mylinalg.decompositions import _householder_reflector
 from mylinalg.decompositions import _qr_householder
+from mylinalg.solvers import forward_substitution, backward_substitution
 from mylinalg.utils import Matrix, NPMatrix, check_matrix
 from mylinalg.utils import ZERO_TOL_ITER, is_zero
 
@@ -46,6 +48,37 @@ def standard_power_iteration(
         lambda0 = lambda1
     if shift is None:
         return lambda1.item(), v1
+    return lambda1.item() + shift, v1
+
+
+def inverse_power_iteration(
+    A: Matrix,
+    shift: float = 0.0,
+    max_iterations: int = 100,
+    convergence_tol: Optional[float] = None,
+) -> tuple[float, NPMatrix]:
+    A = check_matrix(A)
+    m, n = A.shape
+    if m != n:
+        raise ValueError("Non-square matrix")
+    A[:] -= shift * np.identity(m, dtype=A.dtype)
+    _, L, U, P, *_ = _lu_gauss_partial(A)
+    max_iterations = max(1, max_iterations)
+    convergence_tol = ZERO_TOL_ITER if convergence_tol is None else convergence_tol
+    v0 = np.ones((m, 1), dtype=A.dtype)
+    v1 = np.empty_like(v0)
+    by = np.empty_like(v0)
+    lambda0 = 0.0
+    for i in range(max_iterations):
+        P.dot(v0, out=by)
+        by[:] = forward_substitution(L, by)
+        v1[:] = backward_substitution(U, by)
+        lambda1 = v1.T.dot(v0) / v1.T.dot(v1)
+        v1[:] /= np.linalg.norm(v1)
+        if np.abs(lambda1 - lambda0) < convergence_tol:
+            break
+        v0[:] = v1
+        lambda0 = lambda1
     return lambda1.item() + shift, v1
 
 
