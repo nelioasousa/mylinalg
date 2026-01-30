@@ -173,8 +173,8 @@ def _lu_gauss_complete(
     pivots = []
     for i in range(m):
         while j < column_lim:
-            if is_zero(U[i:, j]).all():
-                j += 1
+            if is_zero(U[i:, j:column_lim]).all():
+                j = column_lim
                 continue
             pivots.append((i, j))
             best_r, best_c = np.unravel_index(
