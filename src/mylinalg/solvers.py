@@ -59,7 +59,18 @@ def forward_substitution(A: Matrix, b: Matrix) -> NPMatrix:
 
 
 def gauss_jordan_solver(A: Matrix, b: Matrix) -> NPMatrix:
-    return
+    A = check_matrix(A)
+    b = check_matrix(b)
+    m, n = A.shape
+    if m != n:
+        raise ValueError("Non-square matrix")
+    if b.shape[0] != m:
+        raise ValueError("Shape mismatch between `A` and `b`")
+    A_aug = np.concatenate((A, b), axis=1)
+    rr, pivots = rref(A_aug, pivoting="partial", return_pivots_loc=True, column_lim=n)
+    if len(pivots) != m:
+        raise ValueError("Singular matrix")
+    return rr[:, m:]
 
 
 def lu_solver(A: Matrix, b: Matrix) -> NPMatrix:
