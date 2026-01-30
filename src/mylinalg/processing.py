@@ -15,7 +15,7 @@ def ref(
     return_pivots_loc: bool = False,
     column_lim: Optional[int] = None,
 ) -> NPMatrix | tuple[NPMatrix, list[tuple[int, int]]]:
-    """Row Echalon Form (REF).
+    """Row Echelon Form (REF).
 
     Processa a matriz `A` para deixá-la em REF.
 
@@ -47,7 +47,7 @@ def rref(
     return_pivots_loc: bool = False,
     column_lim: Optional[int] = None,
 ) -> NPMatrix | tuple[NPMatrix, list[tuple[int, int]]]:
-    """Reduced Row Echalon Form (RREF).
+    """Reduced Row Echelon Form (RREF).
 
     Processa a matriz `A` para deixá-la em RREF.
 
