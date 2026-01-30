@@ -2,7 +2,7 @@
 
 import numpy as np
 from mylinalg.processing import rref
-from mylinalg.decompositions import Pivoting, lu
+from mylinalg.decompositions import Pivoting, lu, rank_revealing_qr
 from mylinalg.decompositions import _lu_gauss_none, _lu_gauss_partial, _lu_gauss_complete
 from mylinalg.utils import NPMatrix, Matrix, check_matrix, ZERO_TOL
 
@@ -67,15 +67,17 @@ def gauss_elimination_solver(A: Matrix, b: Matrix, pivoting: Pivoting) -> NPMatr
         raise ValueError("Non-square matrix")
     if b.shape[0] != m:
         raise ValueError("Shape mismatch between `A` and `b`")
-    if pivoting == "none" or pivoting == "partial":
-        acc_steps, _, U, *_ = _lu_gauss_none(A)
-        b_mod = acc_steps.dot(b)
-        return backward_substitution(U, b_mod)
-    else:
+    if pivoting == "complete":
         acc_steps, _, U, _, Q, _ = _lu_gauss_complete(A)
         b_mod = acc_steps.dot(b)
         x_mod = backward_substitution(U, b_mod)
         return Q.dot(x_mod)
+    if pivoting == "none":
+        acc_steps, _, U, *_ = _lu_gauss_none(A)
+    else:
+        acc_steps, _, U, *_ = _lu_gauss_partial(A)
+    b_mod = acc_steps.dot(b)
+    return backward_substitution(U, b_mod)
 
 
 def gauss_jordan_solver(A: Matrix, b: Matrix) -> NPMatrix:
@@ -108,4 +110,11 @@ def lu_solver(A: Matrix, b: Matrix) -> NPMatrix:
 
 
 def least_squares_solver(A: Matrix, b: Matrix) -> NPMatrix:
-    return
+    A = check_matrix(A)
+    b = check_matrix(b)
+    m, _ = A.shape
+    if b.shape[0] != m:
+        raise ValueError("Shape mismatch between `A` and `b`")
+    P, Q, R = rank_revealing_qr(A)
+    R_inv = matrix_inverse(R)
+    return P.dot(R_inv).dot(Q.T).dot(b)

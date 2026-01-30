@@ -79,7 +79,7 @@ def qr_method(
     A: Matrix,
     max_iterations: int = 100,
     convergence_tol: Optional[float] = None,
-) -> tuple[list[float], NPMatrix]:
+) -> tuple[NPMatrix, NPMatrix]:
     """Computa autovalores e autovetores de `A` usando a iteração QR.
 
     Entrada:
@@ -113,4 +113,4 @@ def qr_method(
                 break
         else:
             break
-    return np.diagonal(A_i).tolist(), H
+    return A_i, H

@@ -54,7 +54,7 @@ def rank_revealing_qr(
     R = np.zeros_like(P)
     for j in range(n):
         best_column = np.argmax(np.pow(Q[:, j:], 2).sum(axis=0)) + j
-        P[[j, best_column]] = P[[best_column, j]]
+        P[:, [j, best_column]] = P[:, [best_column, j]]
         Q[:, [j, best_column]] = Q[:, [best_column, j]]
         R[:, [j, best_column]] = R[:, [best_column, j]]
         R[j, j] = np.linalg.norm(Q[:, j])
